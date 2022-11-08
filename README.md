@@ -9,3 +9,11 @@ The Gradient Boosting Machines (gmb) algorithm was used. I would like to acknowl
 
 This repo is organized as follows:
 
+1. EDA, checking summarry, and NAs
+2. Data Imputation
+3. Model building
+4. Tuning the model
+5. Final model
+6. Visualize the model
+7. Testing and metrics calculation
+8. Visualization of model performance at different sites 
