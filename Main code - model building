@@ -10,4 +10,5 @@ setwd("...\...")
 read_csv(""dgwlData.csv")
 1. Explore the data
 windows()
+dgwlDataset <- dgwlDataset[,-16]                #GWLA is not 
 plot_na_pareto(dgwlDataset, only_na = TRUE)     #shows the distribution of NAs per variables
