@@ -1,0 +1,13 @@
+library(tidyverse)   #Data tidying
+library(dlookr)      # for exploratory data analysis and imputation
+library(visdat)      # for visualizing NAs
+library(plotly)      # for interactive visualization
+library(missRanger)  # to generate and impute NAs
+library(GGally)      #For visualization of the relationships between variables
+library(hydroGOF)    #metrics calculation
+
+setwd("...\...")
+read_csv(""dgwlData.csv")
+1. Explore the data
+windows()
+plot_na_pareto(dgwlDataset, only_na = TRUE)     #shows the distribution of NAs per variables
