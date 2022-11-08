@@ -1,15 +1,75 @@
-library(tidyverse)   #Data tidying
+library(tidyverse)   # Data tidying
+library(gbm)         # algorithm
+library(caret)       # machine learning package
+library(rsample)     # for splitting the data 
 library(dlookr)      # for exploratory data analysis and imputation
-library(visdat)      # for visualizing NAs
-library(plotly)      # for interactive visualization
 library(missRanger)  # to generate and impute NAs
-library(GGally)      #For visualization of the relationships between variables
+library(GGally)      # For visualization of the relationships between variables
 library(hydroGOF)    #metrics calculation
 
 setwd("...\...")
 read_csv(""dgwlData.csv")
-1. Explore the data
+
+##1. Explore the data
+
+summary(dgwlDataset)
+
 windows()
 plot_na_pareto(dgwlDataset, only_na = TRUE)     #shows the distribution of NAs per variables
+
+#visualize selected variables
+dgwlDataset %>%
+  select(Discharge, TRMM, SoilMoisture, GRACE_TWSA, DGWL_m) %>%
+  GGally::ggpairs()
+
+## 2. Data imputation
+# Multiple approaches were implemented, the selected method was shown here. The dataset consists of 32 indpendent wells, each containing 172 records. 
+# The imputation was implemented for individual wells. The selected method for imputing the first feature variable - conductivity is using mean.
+
+dgwlDataset$Conductivity[is.na(dgwlDataset$Conductivity)] <- 6.184
+summary(dgwlDataset)  #check
+
+# The impution methods used for replacing missing values for the wells were "mice" and "rpart" method. The mice method gave the best results. 
+# For more info check here: https://yuzar-blog.netlify.app/posts/2021-03-04-how-to-impute-missing-values-in-r/
+
+imputedDgwlDatamice <- dgwlDataset %>% 
+  group_by(wellName) %>% 
+  imputate_na(DGWL_m, method = "mice")
+
+# check the imputation results
+summary(imputedDgwlDatamice)
+plot(imputedDgwlDatamice)
+
+# clean the data after impuatation
+dgwlDataset$dgwl <- imputedDgwlDatamice
+dgwlDataset <- dgwlDataset[, -c(3, 16)]
+summary(dgwlDataset)
+
+## 3. Model building
+# Split the data
+set.seed(15)
+split <- initial_split(dgwlDataset, 0.8)
+train_dataset <- training(split)
+test_dataset <- testing(split)
+
+# visualize feature variables and label relationship
+dgwlDataset %>%
+  select(Discharge, TRMM, SoilMoisture, GRACE_TWSA, DGWL_m) %>%
+  GGally::ggpairs()
+
+# First traial using large trees
+gbm.fit <- gbm(formula = dgwl~.,
+               distribution = "gaussian",
+               data = train_dataset,
+               n.trees = 20000,
+               interaction.depth = 1,
+               shrinkage = 0.001,
+               cv.folds = 10,
+               n.cores = NULL, # will use all cores by default
+               verbose = FALSE) 
+
+
+
+
 
 
