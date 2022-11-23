@@ -14,53 +14,32 @@ library(rsample)    # split the data into train and test set
 ##First, step is processing the DGWL data and append it to master file
 ###Import the data
 
-
 DGWL <- read_csv("Dataset/dgwlData.csv")
-summary(DGWL)
-
-#Convert wide to long and merge with the master dataframe
-DGWL_longer <- DGWL %>% 
-  pivot_longer(cols = Barry:SWS, names_to = "Well.Name", values_to = "DGWL_m")
-summary(DGWL_longer)
-
-#merge the data frames
-##rename the columns
-colnames(DGWL_longer) <- c("Month", "Year", "wellName", "DGWL_m")
-
-dgwlDataset <- merge(allData, DGWL_longer, by = c("Month", "Year", "wellName"))
-summary(dgwlDataset)
-
-write_csv(dgwlDataset, "dgwlData.csv")
+colnames(DGWL)[3] <- "wellName"
 
 #First part of the model building, is impute the missing DGWL data. This was accomplished, by building individual model for each well.
 
-dgwlDataset <- dgwlDataset[,-16]    #removes GWLA
-
-dgwlDataList <- split(dgwlDataset, dgwlDataset$wellName) 
-
-#starts here for Github
-
 windows()
-plot_na_pareto(dgwlDataset, only_na = TRUE)
+plot_na_pareto(DGWL, only_na = TRUE)
 
-summary(dgwlDataset)
+summary(DGWL)
 
 #visualize
-dgwlDataset %>%
+DGWL %>%
   select(Discharge, TRMM, SoilMoisture, GRACE_TWSA, DGWL_m) %>%
   GGally::ggpairs()
 
 #Impute K with the minimum value, because the wells are located in bedrock
-dgwlDataset$Conductivity[is.na(dgwlDataset$Conductivity)] <- 6.184
-summary(dgwlDataset)
+DGWL$Conductivity[is.na(DGWL$Conductivity)] <- 6.184
+summary(DGWL)
 
 #Impute DGWL values using rpart
-#reference: https://yuzar-blog.netlify.app/posts/2021-03-04-how-to-impute-missing-values-in-r/
-imputedDgwlDatarpart <- dgwlDataset %>% 
+#For details here: https://yuzar-blog.netlify.app/posts/2021-03-04-how-to-impute-missing-values-in-r/
+imputedDgwlDatarpart <- DGWL %>% 
   group_by(wellName) %>% 
   imputate_na(DGWL_m, method = "rpart")
 
-imputedDgwlDatamice <- dgwlDataset %>% 
+imputedDgwlDatamice <- DGWL %>% 
   group_by(wellName) %>% 
   imputate_na(DGWL_m, method = "mice") #mice gives the best result
 
@@ -68,17 +47,16 @@ summary(imputedDgwlDatamice)
 
 plot(imputedDgwlDatamice)
 plot(imputedDgwlDatarpart)
-head(imputedDgwlDatamice)
 
-dgwlDataset$dgwl <- imputedDgwlDatamice
-dgwlDataset <- dgwlDataset[, -c(3, 16)]
-summary(dgwlDataset)
+DGWL$dgwl <- imputedDgwlDatamice
+imputedData <- DGWL[, -c(3, 16)]   #wellName column is not needed, remove the original label column
+summary(imputedData)
 
 #Model building
 ##No scaling 
 #Split the data
 set.seed(15)
-split <- initial_split(dgwlDataset, 0.8)
+split <- initial_split(imputedData, 0.8)
 train_dataset <- training(split)
 test_dataset <- testing(split)
 
