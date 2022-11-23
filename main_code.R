@@ -60,15 +60,17 @@ split <- initial_split(imputedData, 0.8)
 train_dataset <- training(split)
 test_dataset <- testing(split)
 
+#visulaize the trainnig feature varibales vs label
 windows()
 train_dataset %>%
   select(Discharge, TRMM, SoilMoisture, GRACE_TWSA, dgwl) %>%
   GGally::ggpairs()
 
+set.seed(105)
 gbm.fit <- gbm(formula = dgwl~.,
                distribution = "gaussian",
                data = train_dataset,
-               n.trees = 20000,
+               n.trees = 5000,
                interaction.depth = 1,
                shrinkage = 0.001,
                cv.folds = 10,
